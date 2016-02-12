@@ -5,92 +5,82 @@
 
 using namespace std;
 
-main()
+class cSection
 {
-    //read std input in to vector of strings, one line per vector element
-    vector<string> vLines;
+    public:
+        cSection(){};
+        cSection(const string& sName, const string& sDesc) :
+            name(sName),
+            desc(sDesc),
+            size(-1)
+            {}
+        string name;
+        string desc;
+        long size;
+};
+
+int main(int argc, char *argv[])
+{
+    //read std input in to list (vector) of strings, one line per vector element
+    vector<string> vLines; //holds each line from std input
     string sInput;
     while(getline(cin, sInput))
         vLines.push_back(sInput);
 
-    //array of strings, one per firmware section
-    string sections[]
-    {
-        "data",
-        "rodata",
-        "bss",
-        "text",
-        "irom0_text"
-    };
-
-    //array of strings, providing description of eachfirmware section
-    string sectionsDesc[]
-    {
-        "Initialized Data (RAM)",
-        "ReadOnly Data (RAM)",
-        "Uninitialized Data (RAM)",
-        "Cached Code (IRAM)",
-        "Uncached Code (SPI)"
-    };
+    //list  (vector) of firmware sections
+    vector<cSection> vSections;
+    vSections.push_back(cSection("data", "Initialized Data (RAM)"));
+    vSections.push_back(cSection("rodata", "ReadOnly Data (RAM)"));
+    vSections.push_back(cSection("bss", "Uninitialized Data (RAM)"));
+    vSections.push_back(cSection("text", "Cached Code (IRAM)"));
+    vSections.push_back(cSection("irom0_text", "Uncached Code (SPI)"));
 
     //RAM values
-    const int availableDRAM = 32786;
-    const int availableIRAM = 81920;
+    const long lAvailableDRAM = 32786;
+    const long lAvailableIRAM = 81920;
 
     //print header
     cout << "------------------------------------------------------------------------------" << endl;
     cout << "   Section|                   Description| Start (hex)|   End (hex)|Used space" << endl;
     cout << "------------------------------------------------------------------------------" << endl;
-    long totalRamUsed = 0L;
-    long totalIRamUsed = 0L;
     //iterate through each firmware section
-    for(int i = 0; i < 5; i++)
+    for(vector<cSection>::iterator itSection = vSections.begin(); itSection != vSections.end(); ++itSection)
     {
-        string sectionStartToken = " _" + sections[i] + "_start";
-        string sectionEndToken = " _" + sections[i] + "_end";
-        long sectionStart = -1L;
-        long sectionEnd = -1L;
+        string sSectionStartToken = " _" + itSection->name + "_start";
+        string sSectionEndToken = " _" + itSection->name + "_end";
+        long lSectionStart = -1L; //address of section start
+        long lSectionEnd = -1L; //address of section end
         //iterate through each line of std input
-        for(int j = 0; j < vLines.size(); j++)
+        for(vector<string>::iterator itLines = vLines.begin(); itLines != vLines.end(); ++itLines)
         {
-            string currentLine = vLines[j];
-            if(currentLine.find(sectionStartToken) != string::npos)
+            if(itLines->find(sSectionStartToken) != string::npos)
             {
                 //found start token - need first column
-                size_t nEnd = currentLine.find(" ");
-                string sStart = currentLine.substr(0, nEnd);
-                sscanf(sStart.c_str(), "%lX", &sectionStart); // string to long
+                size_t nEnd = itLines->find(" ");
+                string sStart = itLines->substr(0, nEnd);
+                sscanf(sStart.c_str(), "%lX", (unsigned long*)&lSectionStart); // string to long
             }
-            if (currentLine.find(sectionEndToken) != string::npos)
+            if(itLines->find(sSectionEndToken) != string::npos)
             {
                 //found end token - need first column
-                size_t nEnd = currentLine.find(" ");
-                string sStart = currentLine.substr(0, nEnd);
-                sscanf(sStart.c_str(), "%lX", &sectionEnd); // string to long
+                size_t nEnd = itLines->find(" ");
+                string sStart = itLines->substr(0, nEnd);
+                sscanf(sStart.c_str(), "%lX", (unsigned long*)&lSectionEnd); // string to long
             }
-            if(sectionStart != -1L && sectionEnd != -1L)
+            if(lSectionStart != -1L && lSectionEnd != -1L)
             {
                 //both start and end found so we are done for ths section
                 break;
             }
         }
-        long sectionLength = sectionEnd - sectionStart;
-        if(i < 3)
-        {
-            //total ram is sum of first three sections
-            totalRamUsed += sectionLength;
-        }
-        if(i == 3)
-        {
-            //total iram calculated from available minus used by text section
-            totalIRamUsed = availableDRAM - sectionLength;
-        }
+        itSection->size = lSectionEnd - lSectionStart;
         //print table row
-        cout << setw(10) << sections[i] << "|" << setw(30) << sectionsDesc[i] << "|" << setw(12) << hex << sectionStart << "|" << setw(12) << sectionEnd << "|" << setw(8) << dec << sectionLength << endl;
+        cout << setw(10) << itSection->name << "|" << setw(30) << itSection->desc << "|" << setw(12) << hex << lSectionStart << "|" << setw(12) << lSectionEnd << "|" << setw(8) << dec << itSection->size << endl;
     }
     //print footer
-    cout << "Total Used RAM : " << totalRamUsed << endl;
-    cout << "Free RAM : " << availableIRAM - totalRamUsed << endl;
-    cout << "Free IRam : " << totalIRamUsed << endl;
+    long lTotalRamUsed = vSections[0].size + vSections[1].size + vSections[2].size;
+    cout << "Total Used RAM : " << lTotalRamUsed << endl;
+    cout << "Free RAM : " << lAvailableIRAM - lTotalRamUsed << endl;
+    cout << "Free IRam : " << lAvailableDRAM - vSections[3].size << endl;
     cout << "------------------------------------------------------------------------------" << endl;
 }
