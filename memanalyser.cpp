@@ -1,7 +1,16 @@
+/** memanalyser - A tool for analysing memory consumption for compiled ELF file for ESP8266
+ *
+ *  License     GPL V3
+ *  Copyright   riban 2016
+ *  Author      Brian Walton brian@riban.co.uk
+ *  Derived from ESP8266_memory_analyszer by Andrey Filimonov (Sermus)
+ */
+
 #include <stdio.h> //provides sscanf for hex to long conversion
 #include <iostream> //provides std input and output (cin, cout, etc.)
 #include <iomanip> //provides output formatting (columns)
 #include <vector> //provides vector used to hold each line of std input
+#include "version.h"
 
 using namespace std;
 
@@ -21,6 +30,21 @@ class cSection
 
 int main(int argc, char *argv[])
 {
+    if(argc >1)
+    {
+        string sArg1(argv[1]);
+        if(sArg1 == "-v" || sArg1 == "--version")
+        {
+            cout << "memanalyser V" << AutoVersion::MAJOR << "." << AutoVersion::MINOR;
+            if(AutoVersion::BUILD != 0)
+                cout << "." << AutoVersion::BUILD;
+            cout << " Copyright riban 2016";
+            cout << endl;
+            return 0;
+        }
+        cerr << "Usage: objdump -t | memanalyser" << endl;
+        return -1;
+    }
     //read std input in to list (vector) of strings, one line per vector element
     vector<string> vLines; //holds each line from std input
     string sInput;
@@ -83,4 +107,5 @@ int main(int argc, char *argv[])
     cout << "Free RAM : " << lAvailableIRAM - lTotalRamUsed << endl;
     cout << "Free IRam : " << lAvailableDRAM - vSections[3].size << endl;
     cout << "------------------------------------------------------------------------------" << endl;
+    return 0;
 }
